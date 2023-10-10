@@ -9,18 +9,17 @@
 using PointVec = QVector<QPoint>;
 using PointIter = PointVec::iterator;
 
-class Incremental : public QWidget
-{
-    Q_OBJECT
-
+class Incremental{
 public:
-    Incremental(QWidget *parent = nullptr);
-    void paintEvent(QPaintEvent*);
+    Incremental();
     ~Incremental();
-
-private:
+public:
     PointVec createConvexHull();
-    void sortPoints(PointIter begin, PointIter end);
+    PointVec getAllPoints();
+    void addPoint(QPoint p);
+    void sortPoints(PointIter begin , PointIter end);
+private:
+    void makeFirstTriangel(PointVec& hullPoints);
     bool isLeft(QPoint p1 , QPoint p2 ,QPoint p);
     bool isRight(QPoint p1 , QPoint p2 ,QPoint p);
 private:

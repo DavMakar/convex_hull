@@ -1,62 +1,51 @@
 #include "incremental.hpp"
-#include <QPainter>
-#include <QPolygonF>
 
-Incremental::Incremental(QWidget *parent)
-    : QWidget(parent)
+Incremental::Incremental()
 {
-    points.push_back(QPoint(40,40));
-    points.push_back(QPoint(20,80));
-    points.push_back(QPoint(60,80));
-    points.push_back(QPoint(60,60));
-    points.push_back(QPoint(80,140));
-    points.push_back(QPoint(100,80));
-    points.push_back(QPoint(120,40));
-    points.push_back(QPoint(160,140));
-}
-
-void Incremental::paintEvent(QPaintEvent *)
-{
-    QPainter* painter = new QPainter(this);
-    painter->setPen(QPen(Qt::red,4));
-    painter->drawPoints(points.data(),static_cast<int>(points.size()));
-
-    sortPoints(points.begin(),points.end());
-    auto convexHull = createConvexHull();
-
-    painter->setPen(QPen(Qt::green,2));
-    painter->drawPolyline(convexHull.data(),static_cast<int>(convexHull.size()));
-
-    painter->end();
+    points.push_back(QPoint(50,10));
+    points.push_back(QPoint(20,15));
+    points.push_back(QPoint(15,40));
 }
 
 PointVec Incremental::createConvexHull()
 {
-    PointVec hullPoints(points.begin(),points.begin()+3);
-    hullPoints.push_back(points[0]);
+    sortPoints(points.begin(),points.end());
+
+    PointVec hullPoints;
+    makeFirstTriangel(hullPoints);
 
     for(qsizetype i = 3; i< points.size() ; ++i){
-            bool lastRight = false;
-            PointIter p1 = points.begin();
-            PointIter p2 = points.begin();
-            for(auto it = hullPoints.begin(); it != std::prev(hullPoints.end()) ; ++it){
-                if(isRight(*it,*std::next(it),points[i])){
-                    if(!lastRight){
-                        p1 = it;
-                        lastRight = true;
-                    }
-                    p2 = std::next(it);
-                }else{
-                    if(lastRight){
-                        p2 = it;
-                        break;
-                    }
+        bool lastRight = false;
+        PointIter p1 = hullPoints.begin();
+        PointIter p2 = hullPoints.begin();
+        for(auto it = hullPoints.begin(); it != std::prev(hullPoints.end()) ; ++it){
+            if(isRight(*it,*std::next(it),points[i])){
+                if(!lastRight){
+                    p1 = it;
+                    lastRight = true;
+                }
+                p2 = std::next(it);
+            }else{
+                if(lastRight){
+                    p2 = it;
+                    break;
                 }
             }
-            PointIter newIt = hullPoints.erase(std::next(p1),p2);
-            hullPoints.insert(newIt,points[i]);
+        }
+        PointIter newIt = hullPoints.erase(std::next(p1),p2);
+        hullPoints.insert(newIt,points[i]);
     }
     return hullPoints;
+}
+
+PointVec Incremental::getAllPoints()
+{
+    return points;
+}
+
+void Incremental::addPoint(QPoint p)
+{
+    points.push_back(p);
 }
 
 void Incremental::sortPoints(PointIter begin, PointIter end)
@@ -66,8 +55,23 @@ void Incremental::sortPoints(PointIter begin, PointIter end)
     });
 }
 
+void Incremental::makeFirstTriangel(PointVec &hullPoints)
+{
+    hullPoints.push_back(points[0]);
+    if(points[1].y() > points[0].y()){
+        hullPoints.push_back(points[2]);
+        hullPoints.push_back(points[1]);
+
+    }else{
+        hullPoints.push_back(points[1]);
+        hullPoints.push_back(points[2]);
+    }
+    hullPoints.push_back(points[0]);
+}
+
 bool Incremental::isLeft(QPoint p1, QPoint p2, QPoint p)
 {
+
     QPoint vectorP1_P2 (p2.x() - p1.x() , p2.y() - p1.y());
     QPoint vectorP1_P (p.x() - p1.x() , p.y() - p1.y());
 
